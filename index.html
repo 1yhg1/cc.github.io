@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素画板与音乐播放器</title>
+    <style>
+        /* 全局样式 */
+        :root {
+            --primary-color: #6366f1; /* 主色调：靛蓝色 */
+            --secondary-color: #8b5cf6; /* 辅助色：紫色 */
+            --accent-color: #ec4899; /* 强调色：粉色 */
+            --background-color: #f8fafc; /* 背景色 */
+            --text-color: #1e293b; /* 文字颜色 */
+            --light-gray: #e2e8f0; /* 浅灰色 */
+            --dark-gray: #64748b; /* 深灰色 */
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        /* 像素风格彩蛋元素 */
+        .pixel-egg {
+            position: absolute;
+            top: 50%;
+            right: 50px;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect width='8' height='8' fill='%236366f1'/%3E%3Crect x='2' y='2' width='4' height='4' fill='%238b5cf6'/%3E%3Crect x='3' y='3' width='2' height='2' fill='white'/%3E%3C/svg%3E");
+            background-size: contain;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .pixel-egg:hover {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        /* 像素风格弹窗 */
+        .pixel-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pixel-modal-content {
+            background-color: #f8fafc;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+            border: 4px solid #1e293b;
+            animation: pixelAppear 0.3s ease;
+        }
+
+        @keyframes pixelAppear {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .pixel-modal-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .pixel-modal-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0 var(--secondary-color);
+            letter-spacing: 1px;
+        }
+
+        .pixel-modal-message {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .pixel-birthday-cake {
+            display: flex;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .pixel-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-color);
+            color: white;
+            border: 2px solid #1e293b;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .pixel-close:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.1);
+        }
+
+        .pixel-confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0;
+            animation: pixelFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes pixelFloat {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        /* 像素画板部分 */
+        .canvas-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .canvas-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--light-gray);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        #pixelCanvas {
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+            cursor: crosshair;
+        }
+
+        .canvas-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .tool-options {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .tool-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .tool-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .tool-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 150px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: var(--dark-gray);
+            font-size: 0.9rem;
+        }
+
+        .color-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.active {
+            border-color: var(--text-color);
+            transform: scale(1.1);
+        }
+
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: 2px solid var(--light-gray);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* 教程部分 */
+        .tutorial-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .tutorial-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .tutorial-card {
+            background: var(--background-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .tutorial-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tutorial-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tutorial-card h3 i {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 1.8rem;
+        }
+
+        .tutorial-card ol, .tutorial-card ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tutorial-card li {            margin-bottom: 0.5rem;        }
+
+        /* 教程资源样式 */
+        .tutorial-resources {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--light-gray);
+        }
+
+        .tutorial-resources a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .tutorial-resources a:hover {
+            color: var(--secondary-color);
+            text-decoration: none;
+        }
+
+
+
+        /* 折叠功能样式 */
+        .tutorial-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .tutorial-card-toggle {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--dark-gray);
+            transition: transform 0.3s ease, color 0.2s ease;
+        }
+
+        .tutorial-card-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        .tutorial-card-toggle.active {
+            transform: rotate(180deg);
+        }
+
+        .tutorial-card-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.5s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .tutorial-card-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+        }
+
+        /* 音乐播放区域 */
+        .music-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 添加背景装饰 */
+        .music-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 10%, transparent 10.5%);
+            background-size: 30px 30px;
+            animation: bg-animation 10s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes bg-animation {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(30px, 30px);
+            }
+        }
+
+        .music-section h2 {
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .music-player {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .current-track {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .current-track:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .track-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 旋转动画，当音乐播放时 */
+        .track-image.playing {
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .track-info {
+            flex: 1;
+        }
+
+        .track-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .track-artist {
+            font-size: 1rem;
+            opacity: 0.9;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), white);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .progress-time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+
+        .play-controls {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+            border-radius: 50%;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .music-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .music-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .music-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .music-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .music-item:hover::before {
+            left: 100%;
+        }
+
+        .music-item.active {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .music-item-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            object-fit: cover;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .music-item:hover .music-item-image {
+            transform: scale(1.05);
+        }
+
+        .music-item-info {
+            flex: 1;
+        }
+
+        .music-item-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .music-item-artist {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* 播放指示标记 */
+        .music-item.active .music-item-info::after {
+            content: '▶️';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* 页脚 */
+        footer {
+            background: var(--text-color);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.75rem;
+            }
+            
+            h3 {
+                font-size: 1.25rem;
+            }
+            
+            .canvas-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .current-track {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .music-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>像素艺术创作空间</h1>
+            <p>释放你的创造力，绘制像素艺术并享受音乐</p>
+        </div>
+        <!-- 彩蛋元素 -->
+        <div class="pixel-egg" id="pixelEgg"></div>
+    </header>
+
+    <!-- 像素风格弹窗 -->
+    <div class="pixel-modal" id="pixelModal">
+        <div class="pixel-modal-content">
+            <button class="pixel-close" id="closeModal">×</button>
+            <div class="pixel-modal-header">
+                <h2 class="pixel-modal-title">🎉 生日快乐！ 🎉</h2>
+            </div>
+            <div class="pixel-birthday-cake">
+                <!-- 像素风格生日图片 -->
+                <img src="cute.png" alt="Happy Birthday Pixel Art" style="max-width: 40%; height: auto; border: 4px solid #1e293b; border-radius: 8px;">
+            </div>
+            <p class="pixel-modal-message">
+                Dear CC，生日快乐！🎉<br><br>
+                这是为你特别准备的像素艺术创作空间，希望你喜欢！<br><br>
+                愿你的每一天都充满色彩与创意，就像像素画一样绚丽多彩！<br><br>
+                虽然做的不好，但是我会继续努力，让你看到更好的作品！<br><br>
+                如果你发现这个了，请告诉我哦！<br><br>
+            </p>
+            <!-- 像素装饰元素 -->
+            <div style="display: flex; justify-content: center; gap: 10px; margin-top: 1rem;">
+                <span style="font-size: 2rem;">🎨</span>
+                <span style="font-size: 2rem;">🎵</span>
+                <span style="font-size: 2rem;">✨</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 像素画板部分 -->
+        <section class="canvas-section">
+            <h2>像素画板</h2>
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="pixelCanvas"></canvas>
+                </div>
+                <div class="canvas-controls">
+                    <div class="control-group">
+                        <label for="canvasColor">画布底色</label>
+                        <input type="color" id="canvasColor" value="#ffffff">
+                    </div>
+                    <div class="control-group">
+                        <label for="brushColor">画笔颜色</label>
+                        <input type="color" id="brushColor" value="#000000">
+                    </div>
+                    <div class="control-group">
+                        <label>颜色选择</label>
+                        <div class="color-picker" id="presetColors">
+                            <div class="color-option" data-color="#000000" style="background-color: #000000;"></div>
+                            <div class="color-option" data-color="#ffffff" style="background-color: #ffffff;"></div>
+                            <div class="color-option" data-color="#ff0000" style="background-color: #ff0000;"></div>
+                            <div class="color-option" data-color="#00ff00" style="background-color: #00ff00;"></div>
+                            <div class="color-option" data-color="#0000ff" style="background-color: #0000ff;"></div>
+                            <div class="color-option" data-color="#ffff00" style="background-color: #ffff00;"></div>
+                            <div class="color-option" data-color="#ff00ff" style="background-color: #ff00ff;"></div>
+                            <div class="color-option" data-color="#00ffff" style="background-color: #00ffff;"></div>
+                            <div class="color-option" data-color="#ff6600" style="background-color: #ff6600;"></div>
+                            <div class="color-option" data-color="#663399" style="background-color: #663399;"></div>
+                            <div class="color-option" data-color="#339966" style="background-color: #339966;"></div>
+                            <div class="color-option" data-color="#996633" style="background-color: #996633;"></div>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <button class="btn" id="clearCanvas">清空画布</button>
+                    </div>
+                    <div class="control-group">
+                        <label>工具</label>
+                        <div class="tool-options">
+                            <button class="tool-btn active" id="brushTool">🎨 画笔</button>
+                            <button class="tool-btn" id="eraserTool">🧽 橡皮擦</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>导出格式</label>
+                        <div class="tool-options">
+                            <button class="btn" id="exportPNG">导出 PNG</button>
+                            <button class="btn" id="exportJPEG">导出 JPEG</button>
+                            <button class="btn" id="exportWebP">导出 WebP</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 像素画教程部分 -->
+        <section class="tutorial-section">
+            <h2>像素画教程</h2>
+            <div class="tutorial-content">
+                <div class="tutorial-card">
+                    <div class="tutorial-card-header">
+                        <h3><i>🎨</i> 基础技巧</h3>
+                        <button class="tutorial-card-toggle">▼</button>
+                    </div>
+                    <div class="tutorial-card-content">
+                        <p>像素画是一种使用有限像素点创作的艺术形式，以下是一些基础技巧：</p>
+                        <ol>
+                            <li>从简单形状开始，逐步构建复杂图形</li>
+                            <li>使用对比色增强视觉效果</li>
+                            <li>注意像素的排列方式，创造平滑过渡</li>
+                            <li>使用最少的颜色表达最多的信息</li>
+                            <li>关注细节，像素画中的小细节往往决定成败</li>
+                        </ol>
+                        <div class="tutorial-resources">
+                            <p><strong>推荐学习资源：</strong></p>
+                            <ul>
+                                <li><a href="https://www.bilibili.com/video/BV1Ws41177mX" target="_blank">【像素画教程】零基础入门到精通</a></li>
+                                <li><a href="https://www.youtube.com/watch?v=G85_BoTKZ9A" target="_blank">Pixel Art for Beginners - A Complete Guide</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-card">
+                    <div class="tutorial-card-header">
+                        <h3><i>🌈</i> 色彩应用</h3>
+                        <button class="tutorial-card-toggle">▼</button>
+                    </div>
+                    <div class="tutorial-card-content">
+                        <p>在像素画中，色彩的选择和应用至关重要：</p>
+                        <ul>
+                            <li>选择有限的调色板（通常4-8种颜色）</li>
+                            <li>使用相似色创造和谐的视觉效果</li>
+                            <li>学习色彩理论，了解互补色和分裂互补色</li>
+                            <li>注意色彩的深浅变化，创造立体感</li>
+                            <li>在小尺寸作品中避免使用过多相似色调</li>
+                        </ul>
+                        <div class="tutorial-resources">
+                            <p><strong>推荐学习资源：</strong></p>
+                            <ul>
+                                <li><a href="https://www.bilibili.com/video/BV12t411b7aP" target="_blank">【像素画色彩教程】如何选择和搭配颜色</a></li>
+                                <li><a href="https://lospec.com/palette-list" target="_blank">Lospec - 免费像素画调色板资源</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-card">
+                    <div class="tutorial-card-header">
+                        <h3><i>✏️</i> 高级技巧</h3>
+                        <button class="tutorial-card-toggle">▼</button>
+                    </div>
+                    <div class="tutorial-card-content">
+                        <p>掌握基础后，可以尝试这些高级技巧：</p>
+                        <ul>
+                            <li>使用抖动技术（dithering）创造平滑过渡</li>
+                            <li>学习像素艺术中的明暗表现</li>
+                            <li>尝试不同风格：复古8-bit、16-bit或现代像素艺术</li>
+                            <li>研究透视和构图原则</li>
+                            <li>练习像素字体设计</li>
+                        </ul>
+                        <div class="tutorial-resources">
+                            <p><strong>推荐学习资源：</strong></p>
+                            <ul>
+                                <li><a href="https://www.bilibili.com/video/BV1JW411g72s" target="_blank">【进阶】像素画中的光影技巧全解析</a></li>
+                                <li><a href="https://www.youtube.com/watch?v=P7X6QmrI0iM" target="_blank">Advanced Pixel Art Techniques</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-card">
+                    <div class="tutorial-card-header">
+                        <h3><i>💡</i> 创意建议</h3>
+                        <button class="tutorial-card-toggle">▼</button>
+                    </div>
+                    <div class="tutorial-card-content">
+                        <p>寻找灵感和提升创意的方法：</p>
+                        <ol>
+                            <li>从自然和日常生活中获取灵感</li>
+                            <li>研究经典像素艺术作品</li>
+                            <li>尝试复刻你喜欢的角色或物品</li>
+                            <li>设定小目标，每天创作一个小像素画</li>
+                            <li>加入像素艺术社区，获取反馈和建议</li>
+                        </ol>
+                        <div class="tutorial-resources">
+                            <p><strong>推荐学习资源：</strong></p>
+                            <ul>
+                                <li><a href="https://www.artstation.com/search?query=pixel%20art" target="_blank">ArtStation - 像素艺术作品展示</a></li>
+                                <li><a href="https://itch.io/games/tag-pixel-art" target="_blank">Itch.io - 像素艺术游戏和资源</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-card">
+                    <div class="tutorial-card-header">
+                        <h3><i>🔗</i> 精选教程资源</h3>
+                        <button class="tutorial-card-toggle">▼</button>
+                    </div>
+                    <div class="tutorial-card-content">
+                        <p>以下是一些优质的像素画学习网站和视频教程：</p>
+                        <ul>
+                            <li><a href="https://www.bilibili.com/video/BV1Ws41177mX" target="_blank">📹 B站：像素画零基础入门到精通系列</a></li>
+                            <li><a href="https://www.youtube.com/channel/UCaQaFVmE0G2KPGtQOJ6CzXQ" target="_blank">📹 YouTube：Pixel Art Tutorials</a></li>
+                            <li><a href="https://www.pixilart.com/" target="_blank">🎨 Pixilart - 在线像素画创作平台</a></li>
+                            <li><a href="https://lospec.com/" target="_blank">🎨 Lospec - 像素艺术教程和资源</a></li>
+                            <li><a href="https://pixels.cafe/" target="_blank">🌐 Pixels.Cafe - 像素艺术社区</a></li>
+                            <li><a href="https://www.pixeljoint.com/" target="_blank">🌐 Pixel Joint - 像素艺术作品分享</a></li>
+                            <li><a href="https://www.spriters-resource.com/" target="_blank">📚 The Spriters Resource - 游戏精灵资源</a></li>
+                            <li><a href="https://www.pixelprivacy.com/" target="_blank">🎨 Pixel Privacy - 像素艺术教程</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 音乐播放区域 -->
+        <section class="music-section">
+            <h2>休憩音乐台</h2>
+            <div class="music-player">
+                <div class="current-track">
+                    <img src="" alt="当前播放" class="track-image" id="currentTrackImage">
+                    <div class="track-info">
+                        <div class="track-title" id="currentTrackTitle">选择音乐开始播放</div>
+                        <div class="track-artist" id="currentTrackArtist">--</div>
+                    </div>
+                    <div class="play-controls">
+                        <button class="control-btn" id="prevTrack">⏮️</button>
+                        <button class="play-btn" id="playPauseBtn">▶️</button>
+                        <button class="control-btn" id="nextTrack">⏭️</button>
+                    </div>
+                </div>
+                <audio id="audioPlayer" preload="none"></audio>
+                <div class="music-list" id="musicList">
+                    <!-- 音乐列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2023 像素艺术创作空间 - 让创意无限可能</p>
+        </div>
+    </footer>
+
+    <script src="pixelbox.js"></script>
+    <script>
+        // 像素画板功能实现
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化像素画板
+            const pixelSize = 25;
+            const pixelBox = new PixelBox('pixelCanvas', 32, 32, pixelSize);
+            let currentColor = '#000000';
+            let isDrawing = false;
+            let isEraserMode = false;
+            const canvas = document.getElementById('pixelCanvas');
+
+            // 设置画布颜色
+            const canvasColorPicker = document.getElementById('canvasColor');
+            canvasColorPicker.addEventListener('input', function() {
+                pixelBox.clear(canvasColorPicker.value);
+            });
+
+            // 设置画笔颜色
+            const brushColorPicker = document.getElementById('brushColor');
+            brushColorPicker.addEventListener('input', function() {
+                currentColor = brushColorPicker.value;
+            });
+
+            // 预设颜色选择
+            const presetColors = document.querySelectorAll('.color-option');
+            presetColors.forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除所有活动状态
+                    presetColors.forEach(opt => opt.classList.remove('active'));
+                    // 添加当前活动状态
+                    this.classList.add('active');
+                    // 设置颜色
+                    currentColor = this.getAttribute('data-color');
+                    brushColorPicker.value = currentColor;
+                });
+            });
+
+            // 默认选中黑色
+            presetColors[0].classList.add('active');
+
+            // 清空画布
+            document.getElementById('clearCanvas').addEventListener('click', function() {
+                pixelBox.clear(canvasColorPicker.value);
+            });
+
+            // 绘制功能
+            canvas.addEventListener('mousedown', function(e) {
+                isDrawing = true;
+                draw(e);
+            });
+
+            canvas.addEventListener('mousemove', function(e) {
+                if (isDrawing) {
+                    draw(e);
+                }
+            });
+
+            canvas.addEventListener('mouseup', function() {
+                isDrawing = false;
+            });
+
+            canvas.addEventListener('mouseout', function() {
+                isDrawing = false;
+            });
+
+            function draw(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.floor((e.clientX - rect.left) / pixelSize);
+                const y = Math.floor((e.clientY - rect.top) / pixelSize);
+                
+                // 检查坐标是否在画布范围内
+                if (x >= 0 && x < 32 && y >= 0 && y < 32) {
+                    if (isEraserMode) {
+                        // 橡皮擦模式下使用画布背景色
+                        pixelBox.setPixel(x, y, canvasColorPicker.value);
+                    } else {
+                        // 正常绘制模式
+                        pixelBox.setPixel(x, y, currentColor);
+                    }
+                }
+            }
+
+            // 工具切换功能
+            const brushTool = document.getElementById('brushTool');
+            const eraserTool = document.getElementById('eraserTool');
+
+            brushTool.addEventListener('click', function() {
+                isEraserMode = false;
+                brushTool.classList.add('active');
+                eraserTool.classList.remove('active');
+                canvas.style.cursor = 'crosshair';
+            });
+
+            eraserTool.addEventListener('click', function() {
+                isEraserMode = true;
+                eraserTool.classList.add('active');
+                brushTool.classList.remove('active');
+                canvas.style.cursor = 'grab'; // 简化的橡皮擦光标样式
+            });
+
+            // 导出功能
+            function exportImage(format) {
+                // 创建一个新的canvas用于导出
+                const exportCanvas = document.createElement('canvas');
+                exportCanvas.width = 32 * pixelSize; // 原始尺寸
+                exportCanvas.height = 32 * pixelSize;
+                const exportCtx = exportCanvas.getContext('2d');
+                
+                // 绘制原始画布内容
+                exportCtx.drawImage(canvas, 0, 0);
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                
+                // 根据选择的格式设置MIME类型和文件名
+                let mimeType, extension;
+                switch(format) {
+                    case 'jpeg':
+                        mimeType = 'image/jpeg';
+                        extension = 'jpg';
+                        break;
+                    case 'webp':
+                        mimeType = 'image/webp';
+                        extension = 'webp';
+                        break;
+                    case 'png':
+                    default:
+                        mimeType = 'image/png';
+                        extension = 'png';
+                        break;
+                }
+                
+                link.href = exportCanvas.toDataURL(mimeType);
+                link.download = `pixel-art-${timestamp}.${extension}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // 导出按钮事件监听
+            document.getElementById('exportPNG').addEventListener('click', function() {
+                exportImage('png');
+            });
+
+            document.getElementById('exportJPEG').addEventListener('click', function() {
+                exportImage('jpeg');
+            });
+
+            document.getElementById('exportWebP').addEventListener('click', function() {
+                exportImage('webp');
+            });
+
+            // 音乐播放功能
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const prevTrackBtn = document.getElementById('prevTrack');
+            const nextTrackBtn = document.getElementById('nextTrack');
+            const currentTrackTitle = document.getElementById('currentTrackTitle');
+            const currentTrackArtist = document.getElementById('currentTrackArtist');
+            const currentTrackImage = document.getElementById('currentTrackImage');
+            const musicList = document.getElementById('musicList');
+
+            // 页面加载时显示默认封面图
+            function setRandomCoverImage() {
+                // 使用默认封面图
+                currentTrackImage.src = 'default.png';
+            }
+
+            // 音乐列表数据
+            const tracks = [
+                {
+                    title: 'Centuries',
+                    artist: 'Fall Out Boy',
+                    src: 'music/Fall Out Boy - Centuries.mp3',
+                    image: 'music-picture/Fall Out Boy - Centuries.webp'
+                },
+                {
+                    title: 'Immortals',
+                    artist: 'Fall Out Boy',
+                    src: 'music/Fall Out Boy - Immortals.mp3',
+                    image: 'music-picture/Fall Out Boy - Immortals.webp'
+                },
+                {
+                    title: 'The Phoenix',
+                    artist: 'Fall Out Boy',
+                    src: 'music/Fall Out Boy - The Phoenix.mp3',
+                    image: 'music-picture/Fall Out Boy - The Phoenix.webp'
+                },
+                {
+                    title: 'Bob Dylan',
+                    artist: 'Fall Out Boy',
+                    src: 'music/Fall Out Boy - Bob Dylan.mp3',
+                    image: 'music-picture/Fall Out Boy - Bob Dylan.webp'
+                },
+                {
+                    title: 'Lush Life',
+                    artist: 'NEST',
+                    src: 'music/lushlife.mp3',
+                    image: 'music-picture/lushlife.webp'
+                },
+                {
+                    title: 'Say So',
+                    artist: 'Doja Cat',
+                    src: 'music/sayso.mp3',
+                    image: 'music-picture/sayso.jpg'
+                }
+            ];
+
+            let currentTrackIndex = 0;
+
+            // 渲染音乐列表
+            function renderMusicList() {
+                musicList.innerHTML = '';
+                tracks.forEach((track, index) => {
+                    const musicItem = document.createElement('div');
+                    musicItem.className = `music-item ${index === currentTrackIndex ? 'active' : ''}`;
+                    musicItem.dataset.index = index;
+                    musicItem.innerHTML = `
+                        <img src="${track.image}" alt="${track.title}" class="music-item-image">
+                        <div class="music-item-info">
+                            <div class="music-item-title">${track.title}</div>
+                            <div class="music-item-artist">${track.artist}</div>
+                        </div>
+                    `;
+                    musicItem.addEventListener('click', function() {
+                        currentTrackIndex = parseInt(this.dataset.index);
+                        loadTrack(currentTrackIndex);
+                        playTrack();
+                    });
+                    musicList.appendChild(musicItem);
+                });
+            }
+
+            // 加载音乐
+            function loadTrack(index) {
+                const track = tracks[index];
+                audioPlayer.src = track.src;
+                currentTrackTitle.textContent = track.title;
+                currentTrackArtist.textContent = track.artist;
+                currentTrackImage.src = track.image;
+                
+                // 更新活动状态
+                document.querySelectorAll('.music-item').forEach((item, idx) => {
+                    if (idx === index) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+
+            // 播放音乐
+            function playTrack() {
+                audioPlayer.play();
+                playPauseBtn.textContent = '⏸️';
+            }
+
+            // 暂停音乐
+            function pauseTrack() {
+                audioPlayer.pause();
+                playPauseBtn.textContent = '▶️';
+            }
+
+            // 上一首
+            function prevTrack() {
+                currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+                loadTrack(currentTrackIndex);
+                playTrack();
+            }
+
+            // 下一首
+            function nextTrack() {
+                currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+                loadTrack(currentTrackIndex);
+                playTrack();
+            }
+
+            // 播放/暂停按钮事件
+            playPauseBtn.addEventListener('click', function() {
+                if (audioPlayer.paused) {
+                    if (!audioPlayer.src) {
+                        // 如果还没有加载音乐，加载第一首
+                        loadTrack(0);
+                    }
+                    playTrack();
+                } else {
+                    pauseTrack();
+                }
+            });
+
+            // 上一首/下一首按钮事件
+            prevTrackBtn.addEventListener('click', prevTrack);
+            nextTrackBtn.addEventListener('click', nextTrack);
+
+            // 音乐结束时自动播放下一首
+            audioPlayer.addEventListener('ended', nextTrack);
+
+            // 初始化音乐列表
+            renderMusicList();
+            
+            // 设置随机封面图
+            setRandomCoverImage();
+        });
+
+        // 折叠功能实现
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取所有的折叠按钮
+            const toggleButtons = document.querySelectorAll('.tutorial-card-toggle');
+            
+            // 为每个按钮添加点击事件
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 获取当前卡片的内容区域
+                    const cardContent = this.closest('.tutorial-card').querySelector('.tutorial-card-content');
+                    
+                    // 切换内容区域的折叠状态
+                    cardContent.classList.toggle('collapsed');
+                    
+                    // 切换按钮的激活状态
+                    this.classList.toggle('active');
+                });
+            });
+        });
+
+        // 彩蛋功能实现
+        document.addEventListener('DOMContentLoaded', function() {
+            const pixelEgg = document.getElementById('pixelEgg');
+            const pixelModal = document.getElementById('pixelModal');
+            const closeModal = document.getElementById('closeModal');
+
+            // 显示弹窗函数
+            function showModal() {
+                pixelModal.style.display = 'flex';
+                createConfetti();
+            }
+
+            // 隐藏弹窗函数
+            function hideModal() {
+                pixelModal.style.display = 'none';
+                // 清除彩屑
+                const confettiElements = document.querySelectorAll('.pixel-confetti');
+                confettiElements.forEach(elem => elem.remove());
+            }
+
+            // 创建像素风格彩屑
+            function createConfetti() {
+                const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#1a535c', '#ff9f1c', '#e71d36'];
+                const confettiCount = 50;
+                const modalContent = pixelModal.querySelector('.pixel-modal-content');
+
+                for (let i = 0; i < confettiCount; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.classList.add('pixel-confetti');
+                    
+                    // 随机颜色
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.backgroundColor = color;
+                    
+                    // 随机构造（简单的方块或线条）
+                    if (Math.random() > 0.5) {
+                        confetti.style.width = '8px';
+                        confetti.style.height = '8px';
+                    } else {
+                        confetti.style.width = '20px';
+                        confetti.style.height = '4px';
+                        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    }
+                    
+                    // 随机位置
+                    const xPos = Math.random() * 100;
+                    confetti.style.left = `${xPos}%`;
+                    
+                    // 随机动画延迟和持续时间
+                    confetti.style.animationDelay = `${Math.random() * 2}s`;
+                    confetti.style.animationDuration = `${3 + Math.random() * 3}s`;
+                    
+                    modalContent.appendChild(confetti);
+                }
+            }
+
+            // 点击彩蛋触发弹窗
+            pixelEgg.addEventListener('click', showModal);
+
+            // 点击关闭按钮隐藏弹窗
+            closeModal.addEventListener('click', hideModal);
+
+            // 点击弹窗外部隐藏弹窗
+            pixelModal.addEventListener('click', function(event) {
+                if (event.target === pixelModal) {
+                    hideModal();
+                }
+            });
+
+            // 按ESC键隐藏弹窗
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && pixelModal.style.display === 'flex') {
+                    hideModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
